@@ -1755,8 +1755,8 @@ def main():
     cmd_parser.add_argument(
         "-mlongint-impl",
         choices=["none", "longlong", "mpz"],
-        default="mpz",
-        help="long-int implementation used by target (default mpz)",
+        default="none",
+        help="long-int implementation used by target (default none)",
     )
     cmd_parser.add_argument(
         "-mmpz-dig-size",
