@@ -79,6 +79,7 @@
 #define MICROPY_PY_SELECT           (1)
 #define MICROPY_PY_SELECT_SELECT    (1)
 #define MICROPY_PY_ASYNCIO          (1)
+#define MICROPY_EVENT_POLL_HOOK     k_yield();
 #ifdef CONFIG_NETWORKING
 // If we have networking, we likely want errno comfort
 #define MICROPY_PY_ERRNO            (1)
