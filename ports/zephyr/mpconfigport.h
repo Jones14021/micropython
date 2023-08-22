@@ -76,6 +76,8 @@
 #define MICROPY_PY_RE_MATCH_GROUPS  (1)
 #define MICROPY_PY_RE_SUB           (1)
 #define MICROPY_PY_RE_MATCH_SPAN_START_END (1)
+#define MICROPY_PY_SELECT           (1)
+#define MICROPY_PY_SELECT_SELECT    (1)
 #ifdef CONFIG_NETWORKING
 // If we have networking, we likely want errno comfort
 #define MICROPY_PY_ERRNO            (1)
