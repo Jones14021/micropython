@@ -61,7 +61,7 @@
 #define MICROPY_PY_ARRAY            (0)
 #define MICROPY_PY_COLLECTIONS      (0)
 #define MICROPY_PY_CMATH            (0)
-#define MICROPY_PY_IO               (0)
+#define MICROPY_PY_IO               (1)
 #define MICROPY_PY_MICROPYTHON_MEM_INFO (1)
 #define MICROPY_PY_MACHINE          (1)
 #define MICROPY_PY_MACHINE_I2C      (1)
@@ -70,6 +70,12 @@
 #define MICROPY_PY_MACHINE_SPI_LSB (SPI_TRANSFER_LSB)
 #define MICROPY_PY_MACHINE_PIN_MAKE_NEW mp_pin_make_new
 #define MICROPY_PY_STRUCT           (0)
+#define MICROPY_PY_JSON             (1)
+#define MICROPY_PY_JSON_SEPARATORS  (1)
+#define MICROPY_PY_RE               (1)
+#define MICROPY_PY_RE_MATCH_GROUPS  (1)
+#define MICROPY_PY_RE_SUB           (1)
+#define MICROPY_PY_RE_MATCH_SPAN_START_END (1)
 #ifdef CONFIG_NETWORKING
 // If we have networking, we likely want errno comfort
 #define MICROPY_PY_ERRNO            (1)
