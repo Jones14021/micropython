@@ -36,7 +36,6 @@
 #include <version.h>
 #include <zephyr/net/net_context.h>
 #include <zephyr/net/net_pkt.h>
-#include <zephyr/net/dns_resolve.h>
 #ifdef CONFIG_NET_SOCKETS
 #include <zephyr/net/socket.h>
 #endif
@@ -66,7 +65,7 @@ STATIC const mp_obj_type_t socket_type;
 #define RAISE_SOCK_ERRNO(x) { if ((int)(x) == -1) mp_raise_OSError(errno); }
 
 STATIC void socket_check_closed(socket_obj_t *socket) {
-    DEBUG_printf("socket_check_closed");
+    DEBUG_printf("socket_check_closed\n");
     if (socket->ctx == -1) {
         // already closed
         mp_raise_OSError(EBADF);
@@ -74,7 +73,7 @@ STATIC void socket_check_closed(socket_obj_t *socket) {
 }
 
 STATIC void parse_inet_addr(socket_obj_t *socket, mp_obj_t addr_in, struct sockaddr *sockaddr) {
-    DEBUG_printf("parse_inet_addr");
+    DEBUG_printf("parse_inet_addr\n");
     // We employ the fact that port and address offsets are the same for IPv4 & IPv6
     struct sockaddr_in *sockaddr_in = (struct sockaddr_in *)sockaddr;
 
@@ -87,7 +86,7 @@ STATIC void parse_inet_addr(socket_obj_t *socket, mp_obj_t addr_in, struct socka
 }
 
 STATIC mp_obj_t format_inet_addr(struct sockaddr *addr, mp_obj_t port) {
-    DEBUG_printf("format_inet_addr");
+    DEBUG_printf("format_inet_addr\n");
     // We employ the fact that port and address offsets are the same for IPv4 & IPv6
     struct sockaddr_in6 *sockaddr_in6 = (struct sockaddr_in6 *)addr;
     char buf[40];
@@ -109,7 +108,7 @@ STATIC mp_obj_t format_inet_addr(struct sockaddr *addr, mp_obj_t port) {
 }
 
 socket_obj_t *socket_new(void) {
-    DEBUG_printf("socket_new");
+    DEBUG_printf("socket_new\n");
     socket_obj_t *socket = m_new_obj_with_finaliser(socket_obj_t);
     socket->base.type = (mp_obj_t)&socket_type;
     socket->state = STATE_NEW;
@@ -119,7 +118,7 @@ socket_obj_t *socket_new(void) {
 // Methods
 
 STATIC void socket_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    DEBUG_printf("socket_print");
+    DEBUG_printf("socket_print\n");
     socket_obj_t *self = self_in;
     if (self->ctx == -1) {
         mp_printf(print, "<socket NULL>");
@@ -130,7 +129,7 @@ STATIC void socket_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kin
 }
 
 STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    DEBUG_printf("socket_make_new");
+    DEBUG_printf("socket_make_new\n");
     mp_arg_check_num(n_args, n_kw, 0, 4, false);
 
     socket_obj_t *socket = socket_new();
@@ -163,7 +162,7 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t
 }
 
 STATIC mp_obj_t socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
-    DEBUG_printf("socket_bind");
+    DEBUG_printf("socket_bind\n");
     socket_obj_t *socket = self_in;
     socket_check_closed(socket);
 
@@ -178,7 +177,7 @@ STATIC mp_obj_t socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
 
 STATIC mp_obj_t socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
-    DEBUG_printf("socket_connect");
+    DEBUG_printf("socket_connect\n");
     socket_obj_t *socket = self_in;
     socket_check_closed(socket);
 
@@ -194,7 +193,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
 // method socket.listen([backlog])
 STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
-    DEBUG_printf("socket_listen");
+    DEBUG_printf("socket_listen\n");
     socket_obj_t *socket = args[0];
     socket_check_closed(socket);
 
@@ -212,7 +211,7 @@ STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_listen_obj, 1, 2, socket_listen);
 
 STATIC mp_obj_t socket_accept(mp_obj_t self_in) {
-    DEBUG_printf("socket_accept");
+    DEBUG_printf("socket_accept\n");
     socket_obj_t *socket = self_in;
     socket_check_closed(socket);
 
@@ -233,7 +232,7 @@ STATIC mp_obj_t socket_accept(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
 STATIC mp_uint_t sock_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
-    DEBUG_printf("sock_write");
+    DEBUG_printf("sock_write\n");
     socket_obj_t *socket = self_in;
     if (socket->ctx == -1) {
         // already closed
@@ -251,7 +250,7 @@ STATIC mp_uint_t sock_write(mp_obj_t self_in, const void *buf, mp_uint_t size, i
 }
 
 STATIC mp_obj_t socket_send(mp_obj_t self_in, mp_obj_t buf_in) {
-    DEBUG_printf("socket_send");
+    DEBUG_printf("socket_send\n");
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
     int err = 0;
@@ -264,7 +263,7 @@ STATIC mp_obj_t socket_send(mp_obj_t self_in, mp_obj_t buf_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
 STATIC mp_uint_t sock_read(mp_obj_t self_in, void *buf, mp_uint_t max_len, int *errcode) {
-    DEBUG_printf("sock_read");
+    DEBUG_printf("sock_read\n");
     socket_obj_t *socket = self_in;
     if (socket->ctx == -1) {
         // already closed
@@ -282,7 +281,7 @@ STATIC mp_uint_t sock_read(mp_obj_t self_in, void *buf, mp_uint_t max_len, int *
 }
 
 STATIC mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
-    DEBUG_printf("socket_recv");
+    DEBUG_printf("socket_recv\n");
     mp_int_t max_len = mp_obj_get_int(len_in);
     vstr_t vstr;
     // +1 to accommodate for trailing \0
@@ -307,7 +306,7 @@ STATIC mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recv_obj, socket_recv);
 
 STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
-    DEBUG_printf("socket_setsockopt");
+    DEBUG_printf("socket_setsockopt\n");
     (void)n_args; // always 4
     mp_warning(MP_WARN_CAT(RuntimeWarning), "setsockopt() not implemented");
     return mp_const_none;
@@ -321,7 +320,7 @@ STATIC mp_obj_t socket_makefile(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_makefile);
 
 STATIC mp_uint_t sock_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode) {
-    DEBUG_printf("sock_ioctl");
+    DEBUG_printf("sock_ioctl\n");
     socket_obj_t *socket = o_in;
     (void)arg;
     switch (request) {
@@ -378,81 +377,8 @@ STATIC MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &socket_locals_dict
     );
 
-//
-// getaddrinfo() implementation
-//
-
-typedef struct _getaddrinfo_state_t {
-    mp_obj_t result;
-    struct k_sem sem;
-    mp_obj_t port;
-    int status;
-} getaddrinfo_state_t;
-
-void dns_resolve_cb(enum dns_resolve_status status, struct dns_addrinfo *info, void *user_data) {
-    getaddrinfo_state_t *state = user_data;
-    DEBUG_printf("dns status: %d\n", status);
-
-    if (info == NULL) {
-        if (status == DNS_EAI_ALLDONE) {
-            status = 0;
-        }
-        state->status = status;
-        k_sem_give(&state->sem);
-        return;
-    }
-
-    mp_obj_tuple_t *tuple = mp_obj_new_tuple(5, NULL);
-    tuple->items[0] = MP_OBJ_NEW_SMALL_INT(info->ai_family);
-    // info->ai_socktype not filled
-    tuple->items[1] = MP_OBJ_NEW_SMALL_INT(SOCK_STREAM);
-    // info->ai_protocol not filled
-    tuple->items[2] = MP_OBJ_NEW_SMALL_INT(IPPROTO_TCP);
-    tuple->items[3] = MP_OBJ_NEW_QSTR(MP_QSTR_);
-    tuple->items[4] = format_inet_addr(&info->ai_addr, state->port);
-    mp_obj_list_append(state->result, MP_OBJ_FROM_PTR(tuple));
-}
-
-STATIC mp_obj_t mod_getaddrinfo(size_t n_args, const mp_obj_t *args) {
-    DEBUG_printf("mod_getaddrinfo");
-    mp_obj_t host_in = args[0], port_in = args[1];
-    const char *host = mp_obj_str_get_str(host_in);
-    mp_int_t family = 0;
-    if (n_args > 2) {
-        family = mp_obj_get_int(args[2]);
-    }
-
-    getaddrinfo_state_t state;
-    // Just validate that it's int
-    (void)mp_obj_get_int(port_in);
-    state.port = port_in;
-    state.result = mp_obj_new_list(0, NULL);
-    k_sem_init(&state.sem, 0, UINT_MAX);
-
-    for (int i = 2; i--;) {
-        int type = (family != AF_INET6 ? DNS_QUERY_TYPE_A : DNS_QUERY_TYPE_AAAA);
-        RAISE_ERRNO(dns_get_addr_info(host, type, NULL, dns_resolve_cb, &state, 3000));
-        k_sem_take(&state.sem, K_FOREVER);
-        if (family != 0) {
-            break;
-        }
-        family = AF_INET6;
-    }
-
-    // Raise error only if there's nothing to return, otherwise
-    // it may be IPv4 vs IPv6 differences.
-    mp_int_t len = MP_OBJ_SMALL_INT_VALUE(mp_obj_len(state.result));
-    if (state.status != 0 && len == 0) {
-        mp_raise_OSError(state.status);
-    }
-
-    return state.result;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_getaddrinfo_obj, 2, 3, mod_getaddrinfo);
-
-
 STATIC mp_obj_t pkt_get_info(void) {
-    DEBUG_printf("pkt_get_info");
+    DEBUG_printf("pkt_get_info\n");
     struct k_mem_slab *rx, *tx;
     struct net_buf_pool *rx_data, *tx_data;
     net_pkt_get_info(&rx, &tx, &rx_data, &tx_data);
@@ -479,7 +405,6 @@ STATIC const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_SOL_SOCKET), MP_ROM_INT(1) },
     { MP_ROM_QSTR(MP_QSTR_SO_REUSEADDR), MP_ROM_INT(2) },
 
-    { MP_ROM_QSTR(MP_QSTR_getaddrinfo), MP_ROM_PTR(&mod_getaddrinfo_obj) },
     { MP_ROM_QSTR(MP_QSTR_pkt_get_info), MP_ROM_PTR(&pkt_get_info_obj) },
 };
 
