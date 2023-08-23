@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include <zephyr/zephyr.h>
+#include <data/json.h>
 #ifdef CONFIG_NETWORKING
 #include <zephyr/net/net_context.h>
 #endif
@@ -69,9 +70,6 @@
 static char heap[MICROPY_HEAP_SIZE];
 
 void init_zephyr(void) {
-    // We now rely on CONFIG_NET_APP_SETTINGS to set up bootstrap
-    // network addresses.
-    #if 0
     #ifdef CONFIG_NETWORKING
     if (net_if_get_default() == NULL) {
         // If there's no default networking interface,
@@ -80,19 +78,54 @@ void init_zephyr(void) {
     }
     #endif
     #ifdef CONFIG_NET_IPV4
-    static struct in_addr in4addr_my = {{{192, 0, 2, 1}}};
+    static struct in_addr in4addr_my = {{{192, 168, 20, 50}}};
     net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
-    static struct in_addr in4netmask_my = {{{255, 255, 255, 0}}};
+    static struct in_addr in4netmask_my = {{{255, 255, 0, 0}}};
     net_if_ipv4_set_netmask(net_if_get_default(), &in4netmask_my);
-    static struct in_addr in4gw_my = {{{192, 0, 2, 2}}};
+    static struct in_addr in4gw_my = {{{192, 168, 0, 1}}};
     net_if_ipv4_set_gw(net_if_get_default(), &in4gw_my);
     #endif
-    #ifdef CONFIG_NET_IPV6
-    // 2001:db8::1
-    static struct in6_addr in6addr_my = {{{0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}}};
-    net_if_ipv6_addr_add(net_if_get_default(), &in6addr_my, NET_ADDR_MANUAL, 0);
-    #endif
-    #endif
+}
+
+void configure_netif_from_config_file(void) {
+    struct network_if_config {
+        const char *ipv4_addr;
+        const char *netmask;
+        const char *default_gateway;
+    };
+
+    static const struct json_obj_descr network_if_config_descr[] = {
+        JSON_OBJ_DESCR_PRIM(struct network_if_config, ipv4_addr, JSON_TOK_STRING),
+        JSON_OBJ_DESCR_PRIM(struct network_if_config, netmask, JSON_TOK_STRING),
+        JSON_OBJ_DESCR_PRIM(struct network_if_config, default_gateway, JSON_TOK_STRING),
+    };
+
+    // open file here and read into file_content
+    //mp_vfs_open() --> https://forum.micropython.org/viewtopic.php?t=9286
+    // or try to use what I did with FatFS in CircuitPython board.c
+
+    uint8_t file_content[] = "{\"test\":\"value\"}";
+    struct network_if_config read_config;
+    int ret = json_obj_parse(
+        file_content,
+        sizeof(file_content),
+        network_if_config_descr,
+        ARRAY_SIZE(network_if_config_descr),
+        &read_config
+    );
+    if (ret < 0)
+    {
+        // error
+    }
+    else
+    {
+        read_config.ipv4_addr;
+        read_config.netmask;
+        read_config.default_gateway;
+        //net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
+        //net_if_ipv4_set_netmask(net_if_get_default(), &in4netmask_my);
+        //net_if_ipv4_set_gw(net_if_get_default(), &in4gw_my);
+    }
 }
 
 #if MICROPY_VFS
