@@ -151,4 +151,4 @@ typedef long mp_off_t;
 #define MICROPY_END_ATOMIC_SECTION irq_unlock
 
 // debugging and troubleshooting
-#define MICROPY_MODSOCKET_DEBUG_PRINT       (1)
+#define MICROPY_MODSOCKET_DEBUG_PRINT       (0)
