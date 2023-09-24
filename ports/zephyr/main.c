@@ -49,6 +49,7 @@
 #include "py/gc.h"
 #include "py/mphal.h"
 #include "py/stackctrl.h"
+#include "py/stream.h"
 #include "shared/runtime/pyexec.h"
 #include "shared/readline/readline.h"
 #include "extmod/modbluetooth.h"
@@ -69,25 +70,37 @@
 
 static char heap[MICROPY_HEAP_SIZE];
 
-void init_zephyr(void) {
-    #ifdef CONFIG_NETWORKING
-    if (net_if_get_default() == NULL) {
-        // If there's no default networking interface,
-        // there's nothing to configure.
-        return;
+uint8_t read_from_file(const char * filename, uint8_t buffer)
+{    
+    printf("Reading network configuration from file: %s\n", filename);
+
+    const char *mode = "rb";    
+    mp_obj_t filename_obj = mp_obj_new_str(filename, strlen(filename));    
+    mp_obj_t mode_obj = mp_obj_new_str(mode, strlen(mode));    
+    mp_obj_t args[2] = { filename_obj, mode_obj };
+
+    mp_import_stat_t stats = mp_import_stat(filename);
+    
+    if (stats == MP_IMPORT_STAT_NO_EXIST)
+    {
+        printf("File doesn't exist.\n");
+        return 0;
     }
-    #endif
-    #ifdef CONFIG_NET_IPV4
-    static struct in_addr in4addr_my = {{{192, 168, 20, 50}}};
-    net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
-    static struct in_addr in4netmask_my = {{{255, 255, 0, 0}}};
-    net_if_ipv4_set_netmask(net_if_get_default(), &in4netmask_my);
-    static struct in_addr in4gw_my = {{{192, 168, 0, 1}}};
-    net_if_ipv4_set_gw(net_if_get_default(), &in4gw_my);
-    #endif
+
+    mp_obj_t configfile = mp_builtin_open(2, args, (mp_map_t *) &mp_const_empty_map);
+
+    printf("opened file for reading\n");
+
+    int errcode;
+    uint8_t read_buffer[300];
+    // bytes_read: 0 means EOF
+    mp_uint_t bytes_read = mp_stream_rw(configfile, &read_buffer, (mp_uint_t) sizeof(read_buffer), &errcode, MP_STREAM_RW_READ);
+
+    return 1;
 }
 
 void configure_netif_from_config_file(void) {
+    printf("Configuring network interface...\n");
     struct network_if_config {
         const char *ipv4_addr;
         const char *netmask;
@@ -100,32 +113,56 @@ void configure_netif_from_config_file(void) {
         JSON_OBJ_DESCR_PRIM(struct network_if_config, default_gateway, JSON_TOK_STRING),
     };
 
-    // open file here and read into file_content
-    //mp_vfs_open() --> https://forum.micropython.org/viewtopic.php?t=9286
-    // or try to use what I did with FatFS in CircuitPython board.c
-
-    uint8_t file_content[] = "{\"test\":\"value\"}";
-    struct network_if_config read_config;
-    int ret = json_obj_parse(
-        file_content,
-        sizeof(file_content),
-        network_if_config_descr,
-        ARRAY_SIZE(network_if_config_descr),
-        &read_config
-    );
-    if (ret < 0)
+    uint8_t read_buffer[300];
+    uint8_t read_success = read_from_file("/flash/netconf.json", &read_buffer);
+    
+    if (read_success == 1)
     {
-        // error
+        printf("Loading stored network configuration from 'netconf.json'\n");
+
+        uint8_t file_content[] = "{\"test\":\"value\"}";
+        struct network_if_config read_config;
+        int ret = json_obj_parse(
+            file_content,
+            sizeof(file_content),
+            network_if_config_descr,
+            ARRAY_SIZE(network_if_config_descr),
+            &read_config
+        );
+        if (ret < 0)
+        {
+            // error
+        }
+        else
+        {            
+            net_if_ipv4_addr_add(net_if_get_default(), &(read_config.ipv4_addr), NET_ADDR_MANUAL, 0);
+            net_if_ipv4_set_netmask(net_if_get_default(), &(read_config.netmask));
+            net_if_ipv4_set_gw(net_if_get_default(), &(read_config.default_gateway));
+        }
     }
     else
     {
-        read_config.ipv4_addr;
-        read_config.netmask;
-        read_config.default_gateway;
-        //net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
-        //net_if_ipv4_set_netmask(net_if_get_default(), &in4netmask_my);
-        //net_if_ipv4_set_gw(net_if_get_default(), &in4gw_my);
+        printf("Loading default network config\n");
+        // apply default network config
+        #ifdef CONFIG_NET_IPV4
+        static struct in_addr in4addr_my = {{{192, 168, 0, 10}}};
+        net_if_ipv4_addr_add(net_if_get_default(), &in4addr_my, NET_ADDR_MANUAL, 0);
+        static struct in_addr in4netmask_my = {{{255, 255, 255, 0}}};
+        net_if_ipv4_set_netmask(net_if_get_default(), &in4netmask_my);
+        static struct in_addr in4gw_my = {{{192, 168, 0, 10}}};
+        net_if_ipv4_set_gw(net_if_get_default(), &in4gw_my);
+        #endif
     }
+}
+
+void init_zephyr(void) {
+    #ifdef CONFIG_NETWORKING
+    if (net_if_get_default() == NULL) {
+        // If there's no default networking interface,
+        // there's nothing to configure.
+        return;
+    }    
+    #endif    
 }
 
 #if MICROPY_VFS
@@ -181,6 +218,8 @@ soft_reset:
     #if MICROPY_VFS
     vfs_init();
     #endif
+
+    configure_netif_from_config_file();
 
     #if MICROPY_MODULE_FROZEN || MICROPY_VFS
     pyexec_file_if_exists("main.py");
