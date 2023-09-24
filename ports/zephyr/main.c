@@ -187,6 +187,9 @@ STATIC void vfs_init(void) {
         ret = mp_vfs_mount_and_chdir_protected(bdev, mount_point);
         // TODO: if this failed, make a new file system and try to mount again
     }
+    else {
+        printf("VFS init: no mountpoint specified. Filesystem not initialized.\n");
+    }
 }
 #endif // MICROPY_VFS
 
